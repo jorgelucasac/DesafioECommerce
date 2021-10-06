@@ -1,0 +1,156 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Desafio.ECommerce.Business.Interfaces;
+using Desafio.ECommerce.Business.Notificacoes;
+using Desafio.ECommerce.Business.Paginacao;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Desafio.ECommerce.Api.Controllers
+{
+    [ApiController]
+    [Route("api/v{version:apiVersion}/[controller]")]
+    public abstract class BaseApiController : ControllerBase
+    {
+        private readonly INotificador _notificador;
+
+        protected BaseApiController(INotificador notificador)
+        {
+            _notificador = notificador;
+        }
+
+
+        protected bool OperacaoValida()
+        {
+            return (!_notificador.TemNotificacoes());
+        }
+
+
+        protected ActionResult ResponsePutPatch()
+        {
+            if (OperacaoValida())
+            {
+                return NoContent();
+            }
+
+            return BadRequest(new ValidationProblemDetails(ObterNotificaCacoesPorChave()));
+        }
+
+        protected ActionResult<T> ResponseDelete<T>(T item)
+        {
+            if (!OperacaoValida())
+                return BadRequest(ObterErrosResposta());
+            if (item == null)
+                return NoContent();
+
+            return Ok(item);
+
+        }
+
+        protected ActionResult<T> ResponsePost<T>(string action, object route, T result)
+        {
+            if (OperacaoValida())
+            {
+                if (result == null)
+                    return NoContent();
+
+                return CreatedAtAction(action, route, result);
+            }
+
+            return BadRequest(ObterErrosResposta());
+        }
+
+        protected ActionResult<T> ResponsePost<T>(string action, string controller, object route, T result)
+        {
+            if (OperacaoValida())
+            {
+                if (result == null)
+                    return NoContent();
+
+                return CreatedAtAction(action, controller, route, result);
+            }
+
+            return BadRequest(ObterErrosResposta());
+        }
+        protected ActionResult<List<T>> ResponseGetList<T>(IEnumerable<T> result)
+        {
+
+            if (result == null || !result.Any())
+                return NoContent();
+
+            return Ok(result);
+        }
+
+        protected ActionResult<PagedResult<T>> ResponseGetPaginado<T>(PagedResult<T> result) where T : class
+        {
+
+            if (result == null || result.TotalResults == 0)
+                return NoContent();
+
+            return Ok(result);
+        }
+
+        protected ActionResult<T> ResponseGet<T>(T result)
+        {
+            if (result == null)
+                return ResponseNotFound();
+
+            return Ok(result);
+        }
+
+
+        protected ActionResult ModelStateErroResponse()
+        {
+            NotificarErrosModelState();
+            return BadRequest();
+        }
+
+        protected void NotificarErro(string chave, string mensagem)
+        {
+            _notificador.Notificar(new Notificacao(chave, mensagem));
+        }
+
+        protected void NotificarErro(string mensagem)
+        {
+            _notificador.Notificar(new Notificacao(string.Empty, mensagem));
+        }
+
+        private void NotificarErrosModelState()
+        {
+            var erros = ModelState.Values.SelectMany(v => v.Errors);
+            foreach (var erro in erros)
+            {
+                var erroMsg = erro.Exception == null ? erro.ErrorMessage : erro.Exception.Message;
+                NotificarErro(string.Empty, erroMsg);
+            }
+        }
+
+        private Dictionary<string, string[]> ObterNotificaCacoesPorChave()
+        {
+            var strings = _notificador.ObterNotificacoes().Select(s => s.Chave).Distinct();
+            var dictionary = new Dictionary<string, string[]>();
+            foreach (var str in strings)
+            {
+                var key = str;
+                dictionary[key] = this._notificador.ObterNotificacoes()
+                    .Where(w => w.Chave.Equals(key, StringComparison.Ordinal))
+                    .Select(s => s.Valor).ToArray();
+            }
+            return dictionary;
+        }
+
+        private ValidationProblemDetails ObterErrosResposta()
+        {
+            return new ValidationProblemDetails(ObterNotificaCacoesPorChave())
+            {
+                Title = "Erros de validação encontrados"
+            };
+        }
+
+        protected ActionResult ResponseNotFound(string mensagem = null)
+        {
+
+            return NotFound(string.IsNullOrEmpty(mensagem) ? "Registro não encontrado" : mensagem);
+        }
+    }
+}
