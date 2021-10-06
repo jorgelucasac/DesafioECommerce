@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Desafio.ECommerce.Api</name>
+    </assembly>
+    <members>
+        <member name="M:Desafio.ECommerce.Api.Controllers.V1.PedidosController.Obter(System.Int32,System.Int32)">
+            <summary>
+            Obtenha os pedidos paginados
+            </summary>
+            
+            <returns>lista de <see cref="T:Desafio.ECommerce.Api.ViewModels.PedidoViewModel"/></returns>
+            <param name="pagina">Pagina desejada</param>
+            <param name="quantidade">Quantidade de itens por página</param>
+            <response code="200">Retorna os pedidos encontrados</response>
+            <response code="204">Caso não exista registros</response>
+            <response code="401">Caso o token não seja informado ou esteja inválido</response>
+            <response code="500">Em caso de erro</response>
+        </member>
+    </members>
+</doc>
