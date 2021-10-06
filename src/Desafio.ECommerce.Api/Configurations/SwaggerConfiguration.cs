@@ -61,7 +61,7 @@ namespace Desafio.ECommerce.Api.Configurations
                 //gera um end point para cada versao
                 foreach (var description in provider.ApiVersionDescriptions)
                 {
-                    c.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", "Api Jogos -" + description.GroupName.ToUpperInvariant());
+                    c.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", "Api E-commerce -" + description.GroupName.ToUpperInvariant());
                 }
             });
         }
